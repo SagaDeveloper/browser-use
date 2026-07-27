@@ -36,7 +36,12 @@ class MessageCompactionSettings(BaseModel):
 	"""Summarizes older history into a compact memory block to reduce prompt size."""
 
 	enabled: bool = True
-	compact_every_n_steps: int = 25
+	# Most real tasks run 10-30 steps and never reach either default trigger
+	# (25 steps / ~10k tokens), so compaction never fires for the common case
+	# and history grows unbounded for the entire run. Lowering both thresholds
+	# makes compaction actually engage on typical-length tasks, not just very
+	# long ones.
+	compact_every_n_steps: int = 10
 	trigger_char_count: int | None = None  # Min char floor; set via trigger_token_count if preferred
 	trigger_token_count: int | None = None  # Alternative to trigger_char_count (~4 chars/token)
 	chars_per_token: float = 4.0
@@ -52,14 +57,20 @@ class MessageCompactionSettings(BaseModel):
 		if self.trigger_token_count is not None:
 			self.trigger_char_count = int(self.trigger_token_count * self.chars_per_token)
 		elif self.trigger_char_count is None:
-			self.trigger_char_count = 40000  # ~10k tokens
+			self.trigger_char_count = 16000  # ~4k tokens; was 40000 (~10k tokens)
 		return self
 
 
 class AgentSettings(BaseModel):
 	"""Configuration options for the Agent"""
 
-	use_vision: bool | Literal['auto'] = True
+	# 'auto' only attaches a screenshot when an action explicitly requests one,
+	# instead of sending a full screenshot on every single step regardless of
+	# whether that step needs visual grounding (e.g. typing, waiting, text
+	# extraction). This mode is fully implemented (see message_manager/service.py)
+	# but was not the default, so most runs paid for vision tokens on steps
+	# that never used them.
+	use_vision: bool | Literal['auto'] = 'auto'
 	vision_detail_level: Literal['auto', 'low', 'high'] = 'auto'
 	save_conversation_path: str | Path | None = None
 	save_conversation_path_encoding: str | None = 'utf-8'
