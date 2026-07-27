@@ -1,0 +1,28 @@
+{
+  "recommendations": [
+    {
+      "id": "d1fe9ffb-7783-472d-9b18-a000cef89798",
+      "confidence": 0.95,
+      "signals": {
+        "title": "Default use_vision to 'auto' instead of always-on",
+        "pattern_type": "vision_waste",
+        "affected_agent": "browser_use_agent",
+        "files_changed": ["browser_use/agent/service.py", "browser_use/agent/views.py"],
+        "detection_basis": "trace_and_code",
+        "description": "Every step shipped a full screenshot regardless of whether the step needed visual grounding. 'auto' mode was already implemented but not the default."
+      }
+    },
+    {
+      "id": "76aae1d6-90cb-412e-b0cd-17c49a4bb88b",
+      "confidence": 0.9,
+      "signals": {
+        "title": "Tighten compaction trigger so it engages on typical-length tasks",
+        "pattern_type": "unbounded_history_growth",
+        "affected_agent": "browser_use_agent",
+        "files_changed": ["browser_use/agent/views.py"],
+        "detection_basis": "trace_and_code",
+        "description": "MessageCompactionSettings was enabled by default but its trigger (25 steps / ~10k tokens) was tuned for very long runs, so most 10-30 step tasks never compacted history at all."
+      }
+    }
+  ]
+}
